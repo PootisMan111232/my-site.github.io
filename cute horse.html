@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Запуск видео</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #000;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    #start-screen {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    #start-screen.hidden {
+      display: none;
+    }
+
+    button {
+      padding: 20px 60px;
+      font-size: 32px;
+      background: #e50914;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #f40612;
+    }
+
+    #splash {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 5;
+      opacity: 0;
+      transition: opacity 0.4s;
+      pointer-events: none;
+    }
+
+    #splash.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #splash img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    #video-container {
+      position: fixed;
+      inset: 0;
+      background: black;
+      opacity: 0;
+      transition: opacity 0.6s;
+    }
+
+    #video-container.playing {
+      opacity: 1;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+
+<div id="start-screen">
+  <h1>Нажми, чтобы милую лошадку</h1>
+  <br><br>
+  <button id="startBtn">СТАРТ</button>
+</div>
+
+<div id="splash">
+  <img src="horse.png" alt="splash">
+</div>
+
+<div id="video-container">
+  <video id="video" playsinline>
+    <source src="scream.mp4" type="video/mp4">
+    Ваш браузер не поддерживает видео.
+  </video>
+</div>
+
+<script>
+const startBtn   = document.getElementById('startBtn');
+const startScreen = document.getElementById('start-screen');
+const splash      = document.getElementById('splash');
+const videoCont   = document.getElementById('video-container');
+const video       = document.getElementById('video');
+
+startBtn.addEventListener('click', async () => {
+  // 1. Прячем кнопку
+  startScreen.classList.add('hidden');
+
+  // 2. Показываем картинку на весь экран
+  splash.classList.add('active');
+
+  // Пытаемся включить полноэкранный режим (работает только после жесткого пользовательского действия)
+  try {
+    if (document.documentElement.requestFullscreen) {
+      await document.documentElement.requestFullscreen();
+    } else if (document.documentElement.webkitRequestFullscreen) {
+      await document.documentElement.webkitRequestFullscreen();
+    } else if (document.documentElement.msRequestFullscreen) {
+      await document.documentElement.msRequestFullscreen();
+    }
+  } catch (err) {
+    console.log("Не удалось включить полноэкранный режим", err);
+  }
+
+  // 3. Через 1 секунду начинаем видео
+  setTimeout(() => {
+    video.play().catch(e => {
+      console.log("Автозапуск заблокирован:", e);
+      // В некоторых браузерах нужно повторное взаимодействие
+      video.muted = true;
+      video.play();
+    });
+
+    // Показываем видео и скрываем картинку
+    videoCont.classList.add('playing');
+    splash.style.opacity = '0';
+
+    // Через небольшую задержку убираем splash совсем
+    setTimeout(() => {
+      splash.style.display = 'none';
+    }, 800);
+
+    // Запрещаем остановку видео (насколько это возможно в браузере)
+    video.controls = false;
+    video.loop = false;           // если нужно зациклить → true
+    video.disablePictureInPicture = true;
+    video.disableRemotePlayback = true;
+
+    // Блокируем правую кнопку и некоторые действия
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('keydown', e => {
+      if (['Space','k','Escape','f'].includes(e.key)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    });
+
+  }, 1000);
+});
+
+</script>
+</body>
+</html>
